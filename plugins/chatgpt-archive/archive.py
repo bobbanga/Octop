@@ -111,6 +111,10 @@ def _archive_parse_root(raw_run: Path) -> ContextManager[Path]:
 
 
 def _json_candidates(root: Path) -> Iterator[Path]:
+    if root.is_file():
+        if root.suffix.lower() == ".json" and root.name != "manifest.json":
+            yield root
+        return
     for path in root.rglob("*.json"):
         if path.name != "manifest.json" and ".git" not in path.parts:
             yield path
@@ -172,9 +176,13 @@ def _extract_conversations(root: Path) -> list[tuple[dict[str, Any], str]]:
             candidates = [parsed]
         else:
             continue
+        try:
+            relative = path.relative_to(root).as_posix()
+        except ValueError:
+            relative = path.name
         for index, item in enumerate(candidates):
             if isinstance(item, dict):
-                result.append((item, f"{path.relative_to(root).as_posix()}#{index}"))
+                result.append((item, f"{relative}#{index}"))
     return result
 
 
