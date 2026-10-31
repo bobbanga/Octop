@@ -1,3 +1,4 @@
+# fmt: off
 from __future__ import annotations
 
 import json
@@ -90,3 +91,5 @@ def test_supported_source_kinds(tmp_path: Path, kind: str) -> None:
         source, account_id="a", source_kind=kind, archive_root=tmp_path / "archive"
     )
     assert result["source_kind"] == kind
+
+# fmt: on
