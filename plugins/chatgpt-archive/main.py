@@ -3,12 +3,16 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any
 
 from octop_harness.plugins import PluginContext, get_tool_config
 
-from archive import ingest, list_runs, search, validate
+_PLUGIN_DIR = Path(__file__).resolve().parent
+if str(_PLUGIN_DIR) not in sys.path:
+    sys.path.insert(0, str(_PLUGIN_DIR))
+from archive import ingest, list_runs, search, validate  # noqa: E402
 
 
 def _config(tool_name: str) -> tuple[Path, Path]:
