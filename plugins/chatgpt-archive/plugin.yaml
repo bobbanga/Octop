@@ -1,0 +1,7 @@
+id: chatgpt-archive
+version: 0.1.0
+name: ChatGPT Local Archive
+description: Local-first ChatGPT export archive with raw manifests, SQLite FTS5 search, and official-export validation
+icon: "🗄️"
+kind: tool
+entry: main.py
