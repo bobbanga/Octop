@@ -227,6 +227,9 @@ def ingest(
         with tempfile.TemporaryDirectory(dir=root) as tmp:
             staged = Path(tmp) / "run"
             _copy_source(source, staged)
+            copied_records = build_manifest(staged)
+            if [record.__dict__ for record in copied_records] != [record.__dict__ for record in records]:
+                raise ArchiveError("copied raw run failed manifest verification")
             (staged / "manifest.json").write_text(
                 json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
             )
