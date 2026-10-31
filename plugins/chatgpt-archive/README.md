@@ -50,3 +50,14 @@ Run ingestion again with the same source to exercise idempotency. The manifest h
 the existing run instead of duplicating rows. Keep the raw run directories and manifests until
 the validation report has been reviewed. The SQLite database can be deleted and rebuilt by
 re-ingesting the raw runs.
+
+## Offline CLI
+
+The same core can be used without an Octop agent. From the plugin directory:
+
+    python cli.py ingest path/to/export --account account-a --source-kind open_source
+    python cli.py validate path/to/primary path/to/official.zip --report validation.json
+    python cli.py search "关键词" --database ~/.octop/chatgpt-archive/index.sqlite3
+    python cli.py runs --database ~/.octop/chatgpt-archive/index.sqlite3
+
+The CLI prints JSON and never uploads the input paths.
