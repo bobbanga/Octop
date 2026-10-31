@@ -12,10 +12,12 @@ import os
 import shutil
 import sqlite3
 import tempfile
+import zipfile
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Iterable, Iterator
+from typing import Any, ContextManager, Iterable, Iterator
 
 SOURCE_KINDS = {"open_source", "official", "manual"}
 
@@ -82,6 +84,30 @@ def _manifest_hash(records: Iterable[FileRecord]) -> str:
     return hashlib.sha256(
         json.dumps(payload, ensure_ascii=False, sort_keys=True).encode()
     ).hexdigest()
+
+
+@contextmanager
+def _export_root(path: Path) -> Iterator[Path]:
+    """Yield a directory for either an unpacked export or a ZIP export."""
+    if path.is_file() and path.suffix.lower() == ".zip":
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp).resolve()
+            with zipfile.ZipFile(path) as archive:
+                for member in archive.infolist():
+                    destination = (target / member.filename).resolve()
+                    if destination != target and target not in destination.parents:
+                        raise ArchiveError("zip export contains an unsafe path")
+                    archive.extract(member, target)
+            yield target
+        return
+    yield path
+
+
+def _archive_parse_root(raw_run: Path) -> ContextManager[Path]:
+    zip_files = list(raw_run.glob("*.zip"))
+    if len(zip_files) == 1:
+        return _export_root(zip_files[0])
+    return _export_root(raw_run)
 
 
 def _json_candidates(root: Path) -> Iterator[Path]:
@@ -239,7 +265,8 @@ def ingest(
             json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
         )
 
-    conversations = _extract_conversations(raw_run)
+    with _archive_parse_root(raw_run) as parse_root:
+        conversations = _extract_conversations(parse_root)
     with sqlite3.connect(db_file) as db:
         _db_schema(db)
         existing = db.execute(
@@ -339,8 +366,10 @@ def _signatures(root: Path) -> dict[str, tuple[str, str, str, int]]:
 
 def validate(primary_path: str | os.PathLike[str], official_path: str | os.PathLike[str]) -> dict[str, Any]:
     """Compare two exports without treating the official ZIP as the source of truth."""
-    primary = _signatures(Path(primary_path).expanduser().resolve())
-    official = _signatures(Path(official_path).expanduser().resolve())
+    with _export_root(Path(primary_path).expanduser().resolve()) as primary_root:
+        primary = _signatures(primary_root)
+    with _export_root(Path(official_path).expanduser().resolve()) as official_root:
+        official = _signatures(official_root)
     verified: list[str] = []
     mismatches: list[dict[str, Any]] = []
     for cid in sorted(set(primary) & set(official)):

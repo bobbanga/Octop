@@ -17,7 +17,7 @@ or configure the tool fields in the Octop dashboard to use another local disk.
 
 The first input contract is a directory or JSON file produced by an open-source collector
 (for example, a browser exporter that preserves conversation JSON, branches, and attachments).
-A ChatGPT official ZIP can be passed to archive_validate after the primary capture.
+A ChatGPT official ZIP can be passed directly to archive_validate after the primary capture; ZIP path traversal is rejected and extraction is temporary.
 
 Validation reports classify:
 
